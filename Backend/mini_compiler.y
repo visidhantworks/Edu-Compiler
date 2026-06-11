@@ -32,15 +32,24 @@ int sem_error_count = 0;
 
 typedef enum { TYPE_INT, TYPE_FLOAT, TYPE_CHAR, TYPE_DOUBLE,
                TYPE_LONG, TYPE_SHORT, TYPE_VOID, TYPE_UNKNOWN } DataType;
+typedef enum {
+    SYMBOL_VARIABLE,
+    SYMBOL_FUNCTION
+} SymbolKind;
+
 
 typedef struct {
-    char     name[64];
+    char name[64];
     DataType type;
-    int      declared_line;
-    int      initialized;   /* 1 = has been assigned */
-    int      used;          /* 1 = has been read     */
-    int      scope;         /* 0 = global, 1+ = nested */
+    SymbolKind kind;
+
+    int declared_line;
+
+    int initialized;
+    int used;
+    int scope;
 } Symbol;
+
 
 Symbol sym_table[SYM_MAX];
 int    sym_count  = 0;
@@ -114,7 +123,7 @@ void sem_warning(const char *what, const char *tip) {
 }
 
 /* Declare a variable; checks for duplicate in same scope */
-void sym_declare(const char *name, DataType type) {
+void sym_declare(const char *name,DataType type,SymbolKind kind) {
     if (sym_find_current_scope(name)) {
         char msg[80], fix[80];
         snprintf(msg, sizeof(msg), "Redeclaration of '%s'", name);
@@ -126,6 +135,7 @@ void sym_declare(const char *name, DataType type) {
         sem_error("Symbol table full", "Too many variables", "Reduce variable count");
         return;
     }
+    sym_table[sym_count].kind = kind;
     strncpy(sym_table[sym_count].name, name, 63);
     sym_table[sym_count].type          = type;
     sym_table[sym_count].declared_line = line_number;
@@ -171,8 +181,14 @@ DataType sym_use(const char *name) {
 
 /* After a scope ends, warn about unused variables */
 void sym_check_unused_scope(int scope) {
+     
     for (int i = 0; i < sym_count; i++) {
-        if (sym_table[i].scope == scope && !sym_table[i].used) {
+        printf("DEBUG: %s kind=%d used=%d scope=%d\n",
+               sym_table[i].name,
+               sym_table[i].kind,
+               sym_table[i].used,
+               sym_table[i].scope);
+        if (sym_table[i].kind == SYMBOL_VARIABLE &&sym_table[i].scope == scope &&!sym_table[i].used) {
             char msg[80];
             snprintf(msg, sizeof(msg), "Variable '%s' declared but never used",
                      sym_table[i].name);
@@ -307,15 +323,20 @@ directive
 /* ============================================================
    FUNCTION DEFINITION
    ============================================================ */
-function_def
+ function_def
     : type_spec IDENTIFIER '(' param_list_opt ')'
         {
-            /* function "declaration" in the symbol table */
-            sym_declare($2, (DataType)$1);
-            /* function bodies count as initialized */
+            sym_declare($2,
+                        (DataType)$1,
+                        SYMBOL_FUNCTION);
+
             Symbol *s = sym_find($2);
-            if (s) s->initialized = 1;
+
+            if (s)
+                s->initialized = 1;
+
             free($2);
+
             cur_scope++;
         }
       compound_stmt
@@ -338,13 +359,19 @@ param_list
 param_decl
     : type_spec IDENTIFIER
         {
-            sym_declare($2, (DataType)$1);
+            sym_declare($2,
+                        (DataType)$1,
+                        SYMBOL_VARIABLE);
+
             /* parameters are pre-initialised by caller */
             Symbol *s = sym_find($2);
-            if (s) s->initialized = 1;
+
+            if (s)
+                s->initialized = 1;
+
             free($2);
         }
-    | type_spec  /* unnamed param (e.g. void) */
+    | type_spec
     ;
 
 /* ============================================================
@@ -393,10 +420,16 @@ declarator_list
 
 declarator_item
     : declarator
-        { sym_declare($1, cur_decl_type); free($1); }
+        {sym_declare($1,
+            cur_decl_type,
+            SYMBOL_VARIABLE); }
     | declarator '=' expression
         {
-            sym_declare($1, cur_decl_type);
+            sym_declare($1,
+            cur_decl_type,
+            SYMBOL_VARIABLE);
+
+            sym_assign($1);
             sym_assign($1);
             /* type check: cur_decl_type vs expression type ($3) */
             if (!types_compatible(cur_decl_type, (DataType)$3)) {
@@ -414,7 +447,9 @@ declarator_item
         {
             char arr_name[80];
             snprintf(arr_name, sizeof(arr_name), "%s[%d]", $1, $3);
-            sym_declare(arr_name, cur_decl_type);
+            sym_declare(arr_name,
+            cur_decl_type,
+            SYMBOL_VARIABLE);
             free($1);
         }
     ;
@@ -639,7 +674,7 @@ int main(int argc, char *argv[]) {
     printf(CYAN "  --------------------------------------------------------------\n" RESET);
 
     /* Print remaining symbols (globals) */
-    sym_check_unused_scope(0);
+     
     if (sym_count > 0) sym_print();
 
     /* Summary */

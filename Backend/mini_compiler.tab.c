@@ -96,15 +96,24 @@ int sem_error_count = 0;
 
 typedef enum { TYPE_INT, TYPE_FLOAT, TYPE_CHAR, TYPE_DOUBLE,
                TYPE_LONG, TYPE_SHORT, TYPE_VOID, TYPE_UNKNOWN } DataType;
+typedef enum {
+    SYMBOL_VARIABLE,
+    SYMBOL_FUNCTION
+} SymbolKind;
+
 
 typedef struct {
-    char     name[64];
+    char name[64];
     DataType type;
-    int      declared_line;
-    int      initialized;   /* 1 = has been assigned */
-    int      used;          /* 1 = has been read     */
-    int      scope;         /* 0 = global, 1+ = nested */
+    SymbolKind kind;
+
+    int declared_line;
+
+    int initialized;
+    int used;
+    int scope;
 } Symbol;
+
 
 Symbol sym_table[SYM_MAX];
 int    sym_count  = 0;
@@ -178,7 +187,7 @@ void sem_warning(const char *what, const char *tip) {
 }
 
 /* Declare a variable; checks for duplicate in same scope */
-void sym_declare(const char *name, DataType type) {
+void sym_declare(const char *name,DataType type,SymbolKind kind) {
     if (sym_find_current_scope(name)) {
         char msg[80], fix[80];
         snprintf(msg, sizeof(msg), "Redeclaration of '%s'", name);
@@ -190,6 +199,7 @@ void sym_declare(const char *name, DataType type) {
         sem_error("Symbol table full", "Too many variables", "Reduce variable count");
         return;
     }
+    sym_table[sym_count].kind = kind;
     strncpy(sym_table[sym_count].name, name, 63);
     sym_table[sym_count].type          = type;
     sym_table[sym_count].declared_line = line_number;
@@ -235,8 +245,14 @@ DataType sym_use(const char *name) {
 
 /* After a scope ends, warn about unused variables */
 void sym_check_unused_scope(int scope) {
+     
     for (int i = 0; i < sym_count; i++) {
-        if (sym_table[i].scope == scope && !sym_table[i].used) {
+        printf("DEBUG: %s kind=%d used=%d scope=%d\n",
+               sym_table[i].name,
+               sym_table[i].kind,
+               sym_table[i].used,
+               sym_table[i].scope);
+        if (sym_table[i].kind == SYMBOL_VARIABLE &&sym_table[i].scope == scope &&!sym_table[i].used) {
             char msg[80];
             snprintf(msg, sizeof(msg), "Variable '%s' declared but never used",
                      sym_table[i].name);
@@ -303,7 +319,7 @@ void yyerror(const char *msg) {
 extern int  yylex(void);
 extern FILE *yyin;
 
-#line 307 "mini_compiler.tab.c"
+#line 323 "mini_compiler.tab.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -814,18 +830,18 @@ static const yytype_int8 yytranslate[] =
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int16 yyrline[] =
 {
-       0,   289,   289,   290,   294,   295,   296,   297,   302,   303,
-     304,   312,   311,   329,   330,   334,   335,   339,   347,   355,
-     354,   365,   366,   370,   371,   372,   373,   374,   375,   376,
-     377,   378,   379,   380,   381,   386,   390,   391,   395,   397,
-     413,   423,   424,   428,   429,   430,   431,   432,   433,   434,
-     439,   440,   448,   449,   450,   455,   456,   461,   462,   463,
-     464,   468,   469,   470,   475,   480,   481,   484,   485,   491,
-     492,   508,   509,   510,   511,   512,   513,   514,   515,   516,
-     517,   518,   519,   520,   529,   530,   531,   539,   540,   541,
-     542,   543,   544,   548,   549,   550,   551,   552,   553,   554,
-     555,   556,   557,   561,   562,   563,   564,   570,   578,   586,
-     587,   598,   599,   603,   604
+       0,   305,   305,   306,   310,   311,   312,   313,   318,   319,
+     320,   328,   327,   350,   351,   355,   356,   360,   374,   382,
+     381,   392,   393,   397,   398,   399,   400,   401,   402,   403,
+     404,   405,   406,   407,   408,   413,   417,   418,   422,   426,
+     446,   458,   459,   463,   464,   465,   466,   467,   468,   469,
+     474,   475,   483,   484,   485,   490,   491,   496,   497,   498,
+     499,   503,   504,   505,   510,   515,   516,   519,   520,   526,
+     527,   543,   544,   545,   546,   547,   548,   549,   550,   551,
+     552,   553,   554,   555,   564,   565,   566,   574,   575,   576,
+     577,   578,   579,   583,   584,   585,   586,   587,   588,   589,
+     590,   591,   592,   596,   597,   598,   599,   605,   613,   621,
+     622,   633,   634,   638,   639
 };
 #endif
 
@@ -1675,95 +1691,112 @@ yyreduce:
   switch (yyn)
     {
   case 7: /* top_level_item: error ';'  */
-#line 297 "mini_compiler.y"
+#line 313 "mini_compiler.y"
                  { yyerrok; }
-#line 1681 "mini_compiler.tab.c"
+#line 1697 "mini_compiler.tab.c"
     break;
 
   case 8: /* directive: DIRECTIVE IDENTIFIER  */
-#line 302 "mini_compiler.y"
+#line 318 "mini_compiler.y"
                                      { free((yyvsp[0].sval)); }
-#line 1687 "mini_compiler.tab.c"
+#line 1703 "mini_compiler.tab.c"
     break;
 
   case 9: /* directive: DIRECTIVE '<' IDENTIFIER '>'  */
-#line 303 "mini_compiler.y"
+#line 319 "mini_compiler.y"
                                      { free((yyvsp[-1].sval)); }
-#line 1693 "mini_compiler.tab.c"
+#line 1709 "mini_compiler.tab.c"
     break;
 
   case 10: /* directive: DIRECTIVE STRING_LIT  */
-#line 304 "mini_compiler.y"
+#line 320 "mini_compiler.y"
                                      { free((yyvsp[0].sval)); }
-#line 1699 "mini_compiler.tab.c"
+#line 1715 "mini_compiler.tab.c"
     break;
 
   case 11: /* $@1: %empty  */
-#line 312 "mini_compiler.y"
+#line 328 "mini_compiler.y"
         {
-            /* function "declaration" in the symbol table */
-            sym_declare((yyvsp[-3].sval), (DataType)(yyvsp[-4].dtype));
-            /* function bodies count as initialized */
+            sym_declare((yyvsp[-3].sval),
+                        (DataType)(yyvsp[-4].dtype),
+                        SYMBOL_FUNCTION);
+
             Symbol *s = sym_find((yyvsp[-3].sval));
-            if (s) s->initialized = 1;
+
+            if (s)
+                s->initialized = 1;
+
             free((yyvsp[-3].sval));
+
             cur_scope++;
-        }
-#line 1713 "mini_compiler.tab.c"
-    break;
-
-  case 12: /* function_def: type_spec IDENTIFIER '(' param_list_opt ')' $@1 compound_stmt  */
-#line 322 "mini_compiler.y"
-        {
-            sym_pop_scope(cur_scope);
-            cur_scope--;
-        }
-#line 1722 "mini_compiler.tab.c"
-    break;
-
-  case 17: /* param_decl: type_spec IDENTIFIER  */
-#line 340 "mini_compiler.y"
-        {
-            sym_declare((yyvsp[0].sval), (DataType)(yyvsp[-1].dtype));
-            /* parameters are pre-initialised by caller */
-            Symbol *s = sym_find((yyvsp[0].sval));
-            if (s) s->initialized = 1;
-            free((yyvsp[0].sval));
         }
 #line 1734 "mini_compiler.tab.c"
     break;
 
-  case 19: /* $@2: %empty  */
-#line 355 "mini_compiler.y"
-        { cur_scope++; }
-#line 1740 "mini_compiler.tab.c"
-    break;
-
-  case 20: /* compound_stmt: '{' $@2 stmt_list '}'  */
-#line 358 "mini_compiler.y"
+  case 12: /* function_def: type_spec IDENTIFIER '(' param_list_opt ')' $@1 compound_stmt  */
+#line 343 "mini_compiler.y"
         {
             sym_pop_scope(cur_scope);
             cur_scope--;
         }
-#line 1749 "mini_compiler.tab.c"
+#line 1743 "mini_compiler.tab.c"
     break;
 
-  case 34: /* statement: error ';'  */
-#line 381 "mini_compiler.y"
-                  { yyerrok; }
-#line 1755 "mini_compiler.tab.c"
-    break;
+  case 17: /* param_decl: type_spec IDENTIFIER  */
+#line 361 "mini_compiler.y"
+        {
+            sym_declare((yyvsp[0].sval),
+                        (DataType)(yyvsp[-1].dtype),
+                        SYMBOL_VARIABLE);
 
-  case 38: /* declarator_item: declarator  */
-#line 396 "mini_compiler.y"
-        { sym_declare((yyvsp[0].sval), cur_decl_type); free((yyvsp[0].sval)); }
+            /* parameters are pre-initialised by caller */
+            Symbol *s = sym_find((yyvsp[0].sval));
+
+            if (s)
+                s->initialized = 1;
+
+            free((yyvsp[0].sval));
+        }
 #line 1761 "mini_compiler.tab.c"
     break;
 
-  case 39: /* declarator_item: declarator '=' expression  */
-#line 398 "mini_compiler.y"
+  case 19: /* $@2: %empty  */
+#line 382 "mini_compiler.y"
+        { cur_scope++; }
+#line 1767 "mini_compiler.tab.c"
+    break;
+
+  case 20: /* compound_stmt: '{' $@2 stmt_list '}'  */
+#line 385 "mini_compiler.y"
         {
-            sym_declare((yyvsp[-2].sval), cur_decl_type);
+            sym_pop_scope(cur_scope);
+            cur_scope--;
+        }
+#line 1776 "mini_compiler.tab.c"
+    break;
+
+  case 34: /* statement: error ';'  */
+#line 408 "mini_compiler.y"
+                  { yyerrok; }
+#line 1782 "mini_compiler.tab.c"
+    break;
+
+  case 38: /* declarator_item: declarator  */
+#line 423 "mini_compiler.y"
+        {sym_declare((yyvsp[0].sval),
+            cur_decl_type,
+            SYMBOL_VARIABLE); }
+#line 1790 "mini_compiler.tab.c"
+    break;
+
+  case 39: /* declarator_item: declarator '=' expression  */
+#line 427 "mini_compiler.y"
+        {
+            sym_declare((yyvsp[-2].sval),
+            cur_decl_type,
+            SYMBOL_VARIABLE);
+
+            sym_assign((yyvsp[-2].sval));
             sym_assign((yyvsp[-2].sval));
             /* type check: cur_decl_type vs expression type ($3) */
             if (!types_compatible(cur_decl_type, (DataType)(yyvsp[0].dtype))) {
@@ -1777,103 +1810,105 @@ yyreduce:
             }
             free((yyvsp[-2].sval));
         }
-#line 1781 "mini_compiler.tab.c"
+#line 1814 "mini_compiler.tab.c"
     break;
 
   case 40: /* declarator_item: declarator '[' INT_LIT ']'  */
-#line 414 "mini_compiler.y"
+#line 447 "mini_compiler.y"
         {
             char arr_name[80];
             snprintf(arr_name, sizeof(arr_name), "%s[%d]", (yyvsp[-3].sval), (yyvsp[-1].ival));
-            sym_declare(arr_name, cur_decl_type);
+            sym_declare(arr_name,
+            cur_decl_type,
+            SYMBOL_VARIABLE);
             free((yyvsp[-3].sval));
         }
-#line 1792 "mini_compiler.tab.c"
+#line 1827 "mini_compiler.tab.c"
     break;
 
   case 41: /* declarator: IDENTIFIER  */
-#line 423 "mini_compiler.y"
+#line 458 "mini_compiler.y"
                   { (yyval.sval) = (yyvsp[0].sval); }
-#line 1798 "mini_compiler.tab.c"
+#line 1833 "mini_compiler.tab.c"
     break;
 
   case 42: /* declarator: '*' IDENTIFIER  */
-#line 424 "mini_compiler.y"
+#line 459 "mini_compiler.y"
                      { /* pointer */ (yyval.sval) = (yyvsp[0].sval); }
-#line 1804 "mini_compiler.tab.c"
+#line 1839 "mini_compiler.tab.c"
     break;
 
   case 43: /* type_spec: KW_INT  */
-#line 428 "mini_compiler.y"
+#line 463 "mini_compiler.y"
                 { cur_decl_type = TYPE_INT;    (yyval.dtype) = TYPE_INT;    }
-#line 1810 "mini_compiler.tab.c"
+#line 1845 "mini_compiler.tab.c"
     break;
 
   case 44: /* type_spec: KW_FLOAT  */
-#line 429 "mini_compiler.y"
+#line 464 "mini_compiler.y"
                 { cur_decl_type = TYPE_FLOAT;  (yyval.dtype) = TYPE_FLOAT;  }
-#line 1816 "mini_compiler.tab.c"
+#line 1851 "mini_compiler.tab.c"
     break;
 
   case 45: /* type_spec: KW_CHAR  */
-#line 430 "mini_compiler.y"
+#line 465 "mini_compiler.y"
                 { cur_decl_type = TYPE_CHAR;   (yyval.dtype) = TYPE_CHAR;   }
-#line 1822 "mini_compiler.tab.c"
+#line 1857 "mini_compiler.tab.c"
     break;
 
   case 46: /* type_spec: KW_DOUBLE  */
-#line 431 "mini_compiler.y"
+#line 466 "mini_compiler.y"
                 { cur_decl_type = TYPE_DOUBLE; (yyval.dtype) = TYPE_DOUBLE; }
-#line 1828 "mini_compiler.tab.c"
+#line 1863 "mini_compiler.tab.c"
     break;
 
   case 47: /* type_spec: KW_LONG  */
-#line 432 "mini_compiler.y"
+#line 467 "mini_compiler.y"
                 { cur_decl_type = TYPE_LONG;   (yyval.dtype) = TYPE_LONG;   }
-#line 1834 "mini_compiler.tab.c"
+#line 1869 "mini_compiler.tab.c"
     break;
 
   case 48: /* type_spec: KW_SHORT  */
-#line 433 "mini_compiler.y"
+#line 468 "mini_compiler.y"
                 { cur_decl_type = TYPE_SHORT;  (yyval.dtype) = TYPE_SHORT;  }
-#line 1840 "mini_compiler.tab.c"
+#line 1875 "mini_compiler.tab.c"
     break;
 
   case 49: /* type_spec: KW_VOID  */
-#line 434 "mini_compiler.y"
+#line 469 "mini_compiler.y"
                 { cur_decl_type = TYPE_VOID;   (yyval.dtype) = TYPE_VOID;   }
-#line 1846 "mini_compiler.tab.c"
+#line 1881 "mini_compiler.tab.c"
     break;
 
   case 51: /* expression_stmt: expression error  */
-#line 440 "mini_compiler.y"
+#line 475 "mini_compiler.y"
                         { yyerrok;
                           sem_error("Missing semicolon",
                                     "Every C statement must end with ';'",
                                     "Add ';' at the end of this statement"); }
-#line 1855 "mini_compiler.tab.c"
+#line 1890 "mini_compiler.tab.c"
     break;
 
   case 54: /* if_stmt: KW_IF error ')' statement  */
-#line 450 "mini_compiler.y"
+#line 485 "mini_compiler.y"
                                   { yyerrok; }
-#line 1861 "mini_compiler.tab.c"
+#line 1896 "mini_compiler.tab.c"
     break;
 
   case 56: /* while_stmt: KW_WHILE error ')' statement  */
-#line 456 "mini_compiler.y"
+#line 491 "mini_compiler.y"
                                    { yyerrok; }
-#line 1867 "mini_compiler.tab.c"
+#line 1902 "mini_compiler.tab.c"
     break;
 
   case 60: /* for_stmt: KW_FOR error ')' statement  */
-#line 464 "mini_compiler.y"
+#line 499 "mini_compiler.y"
                                  { yyerrok; }
-#line 1873 "mini_compiler.tab.c"
+#line 1908 "mini_compiler.tab.c"
     break;
 
   case 70: /* expression: IDENTIFIER '=' expression  */
-#line 493 "mini_compiler.y"
+#line 528 "mini_compiler.y"
         {
             sym_assign((yyvsp[-2].sval));
             Symbol *s = sym_find((yyvsp[-2].sval));
@@ -1889,83 +1924,83 @@ yyreduce:
             free((yyvsp[-2].sval));
             (yyval.dtype) = ltype;
         }
-#line 1893 "mini_compiler.tab.c"
+#line 1928 "mini_compiler.tab.c"
     break;
 
   case 71: /* expression: IDENTIFIER OP_PLUS_EQ expression  */
-#line 508 "mini_compiler.y"
+#line 543 "mini_compiler.y"
                                         { sym_assign((yyvsp[-2].sval)); free((yyvsp[-2].sval)); (yyval.dtype) = TYPE_INT; }
-#line 1899 "mini_compiler.tab.c"
+#line 1934 "mini_compiler.tab.c"
     break;
 
   case 72: /* expression: IDENTIFIER OP_MINUS_EQ expression  */
-#line 509 "mini_compiler.y"
+#line 544 "mini_compiler.y"
                                         { sym_assign((yyvsp[-2].sval)); free((yyvsp[-2].sval)); (yyval.dtype) = TYPE_INT; }
-#line 1905 "mini_compiler.tab.c"
+#line 1940 "mini_compiler.tab.c"
     break;
 
   case 73: /* expression: IDENTIFIER OP_MULT_EQ expression  */
-#line 510 "mini_compiler.y"
+#line 545 "mini_compiler.y"
                                         { sym_assign((yyvsp[-2].sval)); free((yyvsp[-2].sval)); (yyval.dtype) = TYPE_INT; }
-#line 1911 "mini_compiler.tab.c"
+#line 1946 "mini_compiler.tab.c"
     break;
 
   case 74: /* expression: IDENTIFIER OP_DIV_EQ expression  */
-#line 511 "mini_compiler.y"
+#line 546 "mini_compiler.y"
                                         { sym_assign((yyvsp[-2].sval)); free((yyvsp[-2].sval)); (yyval.dtype) = TYPE_INT; }
-#line 1917 "mini_compiler.tab.c"
+#line 1952 "mini_compiler.tab.c"
     break;
 
   case 75: /* expression: expression OP_AND expression  */
-#line 512 "mini_compiler.y"
+#line 547 "mini_compiler.y"
                                    { (yyval.dtype) = TYPE_INT; }
-#line 1923 "mini_compiler.tab.c"
+#line 1958 "mini_compiler.tab.c"
     break;
 
   case 76: /* expression: expression OP_OR expression  */
-#line 513 "mini_compiler.y"
+#line 548 "mini_compiler.y"
                                    { (yyval.dtype) = TYPE_INT; }
-#line 1929 "mini_compiler.tab.c"
+#line 1964 "mini_compiler.tab.c"
     break;
 
   case 77: /* expression: expression OP_EQ expression  */
-#line 514 "mini_compiler.y"
+#line 549 "mini_compiler.y"
                                    { (yyval.dtype) = TYPE_INT; }
-#line 1935 "mini_compiler.tab.c"
+#line 1970 "mini_compiler.tab.c"
     break;
 
   case 78: /* expression: expression OP_NEQ expression  */
-#line 515 "mini_compiler.y"
+#line 550 "mini_compiler.y"
                                    { (yyval.dtype) = TYPE_INT; }
-#line 1941 "mini_compiler.tab.c"
+#line 1976 "mini_compiler.tab.c"
     break;
 
   case 79: /* expression: expression OP_LTE expression  */
-#line 516 "mini_compiler.y"
+#line 551 "mini_compiler.y"
                                    { (yyval.dtype) = TYPE_INT; }
-#line 1947 "mini_compiler.tab.c"
+#line 1982 "mini_compiler.tab.c"
     break;
 
   case 80: /* expression: expression OP_GTE expression  */
-#line 517 "mini_compiler.y"
+#line 552 "mini_compiler.y"
                                    { (yyval.dtype) = TYPE_INT; }
-#line 1953 "mini_compiler.tab.c"
+#line 1988 "mini_compiler.tab.c"
     break;
 
   case 81: /* expression: expression '<' expression  */
-#line 518 "mini_compiler.y"
+#line 553 "mini_compiler.y"
                                    { (yyval.dtype) = TYPE_INT; }
-#line 1959 "mini_compiler.tab.c"
+#line 1994 "mini_compiler.tab.c"
     break;
 
   case 82: /* expression: expression '>' expression  */
-#line 519 "mini_compiler.y"
+#line 554 "mini_compiler.y"
                                    { (yyval.dtype) = TYPE_INT; }
-#line 1965 "mini_compiler.tab.c"
+#line 2000 "mini_compiler.tab.c"
     break;
 
   case 83: /* expression: expression '+' expression  */
-#line 521 "mini_compiler.y"
+#line 556 "mini_compiler.y"
         {
             /* warn on mixing float + int without cast */
             if (((yyvsp[-2].dtype)==TYPE_FLOAT&&(yyvsp[0].dtype)==TYPE_INT)||((yyvsp[-2].dtype)==TYPE_INT&&(yyvsp[0].dtype)==TYPE_FLOAT))
@@ -1974,23 +2009,23 @@ yyreduce:
             (yyval.dtype) = ((yyvsp[-2].dtype)==TYPE_FLOAT||(yyvsp[0].dtype)==TYPE_FLOAT||
                   (yyvsp[-2].dtype)==TYPE_DOUBLE||(yyvsp[0].dtype)==TYPE_DOUBLE) ? TYPE_FLOAT : TYPE_INT;
         }
-#line 1978 "mini_compiler.tab.c"
+#line 2013 "mini_compiler.tab.c"
     break;
 
   case 84: /* expression: expression '-' expression  */
-#line 529 "mini_compiler.y"
+#line 564 "mini_compiler.y"
                                    { (yyval.dtype) = TYPE_INT; }
-#line 1984 "mini_compiler.tab.c"
+#line 2019 "mini_compiler.tab.c"
     break;
 
   case 85: /* expression: expression '*' expression  */
-#line 530 "mini_compiler.y"
+#line 565 "mini_compiler.y"
                                    { (yyval.dtype) = TYPE_INT; }
-#line 1990 "mini_compiler.tab.c"
+#line 2025 "mini_compiler.tab.c"
     break;
 
   case 86: /* expression: expression '/' expression  */
-#line 532 "mini_compiler.y"
+#line 567 "mini_compiler.y"
         {
             /* Warn on integer division */
             if ((yyvsp[-2].dtype)==TYPE_INT && (yyvsp[0].dtype)==TYPE_INT)
@@ -1998,135 +2033,135 @@ yyreduce:
                             "Cast one operand to float if fractional result needed");
             (yyval.dtype) = TYPE_INT;
         }
-#line 2002 "mini_compiler.tab.c"
+#line 2037 "mini_compiler.tab.c"
     break;
 
   case 87: /* expression: expression '%' expression  */
-#line 539 "mini_compiler.y"
+#line 574 "mini_compiler.y"
                                    { (yyval.dtype) = TYPE_INT; }
-#line 2008 "mini_compiler.tab.c"
+#line 2043 "mini_compiler.tab.c"
     break;
 
   case 88: /* expression: expression OP_LSHIFT expression  */
-#line 540 "mini_compiler.y"
+#line 575 "mini_compiler.y"
                                       { (yyval.dtype) = TYPE_INT; }
-#line 2014 "mini_compiler.tab.c"
+#line 2049 "mini_compiler.tab.c"
     break;
 
   case 89: /* expression: expression OP_RSHIFT expression  */
-#line 541 "mini_compiler.y"
+#line 576 "mini_compiler.y"
                                       { (yyval.dtype) = TYPE_INT; }
-#line 2020 "mini_compiler.tab.c"
+#line 2055 "mini_compiler.tab.c"
     break;
 
   case 90: /* expression: expression '|' expression  */
-#line 542 "mini_compiler.y"
+#line 577 "mini_compiler.y"
                                 { (yyval.dtype) = TYPE_INT; }
-#line 2026 "mini_compiler.tab.c"
+#line 2061 "mini_compiler.tab.c"
     break;
 
   case 91: /* expression: expression '&' expression  */
-#line 543 "mini_compiler.y"
+#line 578 "mini_compiler.y"
                                 { (yyval.dtype) = TYPE_INT; }
-#line 2032 "mini_compiler.tab.c"
+#line 2067 "mini_compiler.tab.c"
     break;
 
   case 92: /* expression: expression '^' expression  */
-#line 544 "mini_compiler.y"
+#line 579 "mini_compiler.y"
                                 { (yyval.dtype) = TYPE_INT; }
-#line 2038 "mini_compiler.tab.c"
+#line 2073 "mini_compiler.tab.c"
     break;
 
   case 93: /* unary_expr: primary_expr  */
-#line 548 "mini_compiler.y"
+#line 583 "mini_compiler.y"
                                  { (yyval.dtype) = (yyvsp[0].dtype); }
-#line 2044 "mini_compiler.tab.c"
+#line 2079 "mini_compiler.tab.c"
     break;
 
   case 94: /* unary_expr: '-' unary_expr  */
-#line 549 "mini_compiler.y"
+#line 584 "mini_compiler.y"
                                   { (yyval.dtype) = (yyvsp[0].dtype); }
-#line 2050 "mini_compiler.tab.c"
+#line 2085 "mini_compiler.tab.c"
     break;
 
   case 95: /* unary_expr: '!' unary_expr  */
-#line 550 "mini_compiler.y"
+#line 585 "mini_compiler.y"
                                   { (yyval.dtype) = TYPE_INT; }
-#line 2056 "mini_compiler.tab.c"
+#line 2091 "mini_compiler.tab.c"
     break;
 
   case 96: /* unary_expr: '~' unary_expr  */
-#line 551 "mini_compiler.y"
+#line 586 "mini_compiler.y"
                                   { (yyval.dtype) = TYPE_INT; }
-#line 2062 "mini_compiler.tab.c"
+#line 2097 "mini_compiler.tab.c"
     break;
 
   case 97: /* unary_expr: OP_INC IDENTIFIER  */
-#line 552 "mini_compiler.y"
+#line 587 "mini_compiler.y"
                                   { sym_assign((yyvsp[0].sval)); sym_use((yyvsp[0].sval)); free((yyvsp[0].sval)); (yyval.dtype) = TYPE_INT; }
-#line 2068 "mini_compiler.tab.c"
+#line 2103 "mini_compiler.tab.c"
     break;
 
   case 98: /* unary_expr: OP_DEC IDENTIFIER  */
-#line 553 "mini_compiler.y"
+#line 588 "mini_compiler.y"
                                   { sym_assign((yyvsp[0].sval)); sym_use((yyvsp[0].sval)); free((yyvsp[0].sval)); (yyval.dtype) = TYPE_INT; }
-#line 2074 "mini_compiler.tab.c"
+#line 2109 "mini_compiler.tab.c"
     break;
 
   case 99: /* unary_expr: IDENTIFIER OP_INC  */
-#line 554 "mini_compiler.y"
+#line 589 "mini_compiler.y"
                                   { sym_assign((yyvsp[-1].sval)); sym_use((yyvsp[-1].sval)); free((yyvsp[-1].sval)); (yyval.dtype) = TYPE_INT; }
-#line 2080 "mini_compiler.tab.c"
+#line 2115 "mini_compiler.tab.c"
     break;
 
   case 100: /* unary_expr: IDENTIFIER OP_DEC  */
-#line 555 "mini_compiler.y"
+#line 590 "mini_compiler.y"
                                   { sym_assign((yyvsp[-1].sval)); sym_use((yyvsp[-1].sval)); free((yyvsp[-1].sval)); (yyval.dtype) = TYPE_INT; }
-#line 2086 "mini_compiler.tab.c"
+#line 2121 "mini_compiler.tab.c"
     break;
 
   case 101: /* unary_expr: '&' IDENTIFIER  */
-#line 556 "mini_compiler.y"
+#line 591 "mini_compiler.y"
                                   { sym_use((yyvsp[0].sval)); free((yyvsp[0].sval)); (yyval.dtype) = TYPE_INT; }
-#line 2092 "mini_compiler.tab.c"
+#line 2127 "mini_compiler.tab.c"
     break;
 
   case 102: /* unary_expr: '*' IDENTIFIER  */
-#line 557 "mini_compiler.y"
+#line 592 "mini_compiler.y"
                                   { sym_use((yyvsp[0].sval)); free((yyvsp[0].sval)); (yyval.dtype) = TYPE_INT; }
-#line 2098 "mini_compiler.tab.c"
+#line 2133 "mini_compiler.tab.c"
     break;
 
   case 103: /* primary_expr: INT_LIT  */
-#line 561 "mini_compiler.y"
+#line 596 "mini_compiler.y"
                     { (yyval.dtype) = TYPE_INT;    }
-#line 2104 "mini_compiler.tab.c"
+#line 2139 "mini_compiler.tab.c"
     break;
 
   case 104: /* primary_expr: FLOAT_LIT  */
-#line 562 "mini_compiler.y"
+#line 597 "mini_compiler.y"
                     { (yyval.dtype) = TYPE_FLOAT;  }
-#line 2110 "mini_compiler.tab.c"
+#line 2145 "mini_compiler.tab.c"
     break;
 
   case 105: /* primary_expr: STRING_LIT  */
-#line 563 "mini_compiler.y"
+#line 598 "mini_compiler.y"
                     { free((yyvsp[0].sval)); (yyval.dtype) = TYPE_INT; /* char* = int-compatible */ }
-#line 2116 "mini_compiler.tab.c"
+#line 2151 "mini_compiler.tab.c"
     break;
 
   case 106: /* primary_expr: IDENTIFIER  */
-#line 565 "mini_compiler.y"
+#line 600 "mini_compiler.y"
         {
             DataType t = sym_use((yyvsp[0].sval));
             free((yyvsp[0].sval));
             (yyval.dtype) = t;
         }
-#line 2126 "mini_compiler.tab.c"
+#line 2161 "mini_compiler.tab.c"
     break;
 
   case 107: /* primary_expr: IDENTIFIER '(' arg_list_opt ')'  */
-#line 571 "mini_compiler.y"
+#line 606 "mini_compiler.y"
         {
             /* function call — look it up for its return type */
             Symbol *s = sym_find((yyvsp[-3].sval));
@@ -2134,11 +2169,11 @@ yyreduce:
             free((yyvsp[-3].sval));
             (yyval.dtype) = t;
         }
-#line 2138 "mini_compiler.tab.c"
+#line 2173 "mini_compiler.tab.c"
     break;
 
   case 108: /* primary_expr: IDENTIFIER '[' expression ']'  */
-#line 579 "mini_compiler.y"
+#line 614 "mini_compiler.y"
         {
             char arr_name[80];
             /* best-effort: just use the base name */
@@ -2146,17 +2181,17 @@ yyreduce:
             free((yyvsp[-3].sval));
             (yyval.dtype) = t;
         }
-#line 2150 "mini_compiler.tab.c"
+#line 2185 "mini_compiler.tab.c"
     break;
 
   case 109: /* primary_expr: '(' expression ')'  */
-#line 586 "mini_compiler.y"
+#line 621 "mini_compiler.y"
                           { (yyval.dtype) = (yyvsp[-1].dtype); }
-#line 2156 "mini_compiler.tab.c"
+#line 2191 "mini_compiler.tab.c"
     break;
 
   case 110: /* primary_expr: '(' type_spec ')' unary_expr  */
-#line 588 "mini_compiler.y"
+#line 623 "mini_compiler.y"
         {
             /* explicit cast — warn if lossy */
             if ((yyvsp[-2].dtype)==TYPE_INT && ((yyvsp[0].dtype)==TYPE_FLOAT||(yyvsp[0].dtype)==TYPE_DOUBLE))
@@ -2164,11 +2199,11 @@ yyreduce:
                             "Use round() or floor() if truncation is intentional");
             (yyval.dtype) = (yyvsp[-2].dtype);
         }
-#line 2168 "mini_compiler.tab.c"
+#line 2203 "mini_compiler.tab.c"
     break;
 
 
-#line 2172 "mini_compiler.tab.c"
+#line 2207 "mini_compiler.tab.c"
 
       default: break;
     }
@@ -2361,7 +2396,7 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 607 "mini_compiler.y"
+#line 642 "mini_compiler.y"
 
 
 /* ============================================================

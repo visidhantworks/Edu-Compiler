@@ -7,7 +7,7 @@ import re
 class CompilerService:
 
     def __init__(self):
-        self.compiler_path = "./compiler"
+        self.compiler_path = "./mini_compiler"
 
     def analyze(self, source_code):
 

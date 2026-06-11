@@ -21,7 +21,7 @@ def analyze():
         }), 400
 
     result = compiler.analyze(code)
-
+    print(result["stdout"])
     return jsonify(result)
 
 if __name__ == "__main__":

@@ -99,7 +99,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 244 "mini_compiler.y"
+#line 260 "mini_compiler.y"
 
     int      ival;
     double   fval;
