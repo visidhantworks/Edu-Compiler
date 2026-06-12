@@ -1591,7 +1591,7 @@ async function runAnalysis() {
             console.log("WARNING:", warningMatch);
 
             lexicalResult.warnings.push({
-                line: parseInt(warningMatch[1]),
+                line: Number.parseInt(warningMatch[1]),
                 what: warningMatch[2].trim(),
                 why: warningMatch[3].trim(),
                 fix: warningMatch[3].trim()
