@@ -40,7 +40,7 @@ echo -e "      ${GREEN}✓ mini_compiler binary built${RESET}"
 # ── 4. Run against test file ────────────────────
 echo -e "${BOLD}[4/4] Running against test_input.c ...${RESET}\n"
 
-if [ -f "test_input.c" ]; then
+if [ [-f "test_input.c" ]]; then
     ./mini_compiler test_input.c
 else
     echo "  (No test_input.c found — running in stdin mode)"

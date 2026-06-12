@@ -370,7 +370,7 @@
     resize: vertical;
     tab-size: 4;
     caret-color: var(--gold);
-    spellcheck: false;
+     
   }
 
   #code-input::placeholder { color: var(--muted); }
@@ -558,7 +558,13 @@
     overflow: hidden;
   }
 
-  .tab {
+.tab {
+    appearance: none;
+    -webkit-appearance: none;
+    background: transparent;
+    border: none;
+    outline: none;
+
     padding: 12px 20px;
     font-family: var(--mono);
     font-size: 10px;
@@ -571,11 +577,13 @@
     border-bottom: 2px solid transparent;
     transition: all 0.15s ease;
     display: flex;
+    flex: 0 0 auto;
     align-items: center;
     gap: 7px;
     position: relative;
-  }
+    width: auto;
 
+}
   .tab:last-child { border-right: none; }
 
   .tab.active {
@@ -1175,18 +1183,20 @@
         </div>
 
         <div class="tab-bar">
-          <div class="tab active" onclick="switchTab('all')" id="tab-all">All</div>
-          <div class="tab" onclick="switchTab('tokens')" id="tab-tokens">
-            Tokens&nbsp;<span class="tab-badge tab-badge-blue" id="badge-tokens">0</span>
-          </div>
-          <div class="tab" onclick="switchTab('errors')" id="tab-errors">
-            Errors&nbsp;<span class="tab-badge tab-badge-red" id="badge-errors">0</span>
-          </div>
-          <div class="tab" onclick="switchTab('warnings')" id="tab-warnings">
-            Warnings&nbsp;<span class="tab-badge tab-badge-gray" id="badge-warnings">0</span>
-          </div>
-        </div>
+           
+           <button type="button" class="tab active" id="tab-all"onclick="switchTab('all')">All</button>
+          <button type="button" class="tab" onclick="switchTab('tokens')" id="tab-tokens">
+    Tokens <span class="tab-badge tab-badge-blue" id="badge-tokens">0</span>
+</button>
 
+<button type="button" class="tab" onclick="switchTab('errors')" id="tab-errors">
+    Errors <span class="tab-badge tab-badge-red" id="badge-errors">0</span>
+</button>
+
+<button type="button" class="tab" onclick="switchTab('warnings')" id="tab-warnings">
+    Warnings <span class="tab-badge tab-badge-gray" id="badge-warnings">0</span>
+</button>
+  </div>
         <div class="output-body" id="output-body">
           <div class="placeholder-msg">
             <div class="placeholder-glyph">⚙</div>
@@ -1384,7 +1394,7 @@ function tokenise(src) {
     if (c==='`') { addErr("Backtick '`' is not valid C","Backtick is a shell operator","Remove the backtick character",startLine); adv(); continue; }
     if (c==='\\') { addErr("Lone backslash outside a string","Backslash only works inside strings (e.g. \\n)",'Put it inside a string: printf("hello\\n");',startLine); adv(); continue; }
 
-    addErr(`Unknown character '${c}' (ASCII ${c.charCodeAt(0)})`,'This character has no meaning in C','Delete or replace the character',startLine);
+    addErr(`Unknown character '${c}' (ASCII ${c.codePointAt(0)})`,'This character has no meaning in C','Delete or replace the character',startLine);
     adv();
   }
 
@@ -1547,17 +1557,16 @@ async function runAnalysis() {
             }
         );
         const notice = document.getElementById("render-notice");
-
         fetch("https://edu-compiler.onrender.com/")
+            .catch(() => {})
             .finally(() => {
-
                 notice.classList.add("hide");
-
-                setTimeout(() => {
-                    notice.remove();
-                }, 500);
-
+                setTimeout(() => notice.remove(), 500);
             });
+
+        
+
+           
         const backendResult = await response.json();
         const semanticErrorRegex =/SEMANTIC ERROR at Line\s+(\d+)[\s\S]*?\|\s*What\s*:\s*(.*?)\s*\|[\s\S]*?\|\s*Why\s*:\s*(.*?)\s*\|[\s\S]*?\|\s*Fix\s*:\s*(.*?)\s*\|/g;
         let match;
@@ -1565,7 +1574,7 @@ async function runAnalysis() {
         while ((match = semanticErrorRegex.exec(backendResult.stdout)) !== null) {
 
             lexicalResult.errors.push({
-                line: parseInt(match[1]),
+                line: Number.parseInt(match[1]),
                 what: match[2].trim(),
                 why: match[3].trim(),
                 fix: match[4].trim()
