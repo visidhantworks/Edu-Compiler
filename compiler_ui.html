@@ -972,6 +972,44 @@
     background: linear-gradient(90deg, transparent, var(--border), transparent);
     margin: 4px 0;
   }
+  .render-notice {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+
+    max-width: 380px;
+    padding: 14px 18px;
+
+    background: rgba(255, 196, 0, 0.12);
+    border: 1px solid rgba(255, 196, 0, 0.35);
+    border-radius: 12px;
+
+    color: #ffd54a;
+    font-size: 14px;
+    line-height: 1.5;
+
+    backdrop-filter: blur(10px);
+
+    animation: slideIn 0.4s ease;
+}
+
+.render-notice.hide {
+    opacity: 0;
+    transform: translateY(-15px);
+    transition: all 0.5s ease;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
 </style>
 </head>
 <body>
@@ -1002,6 +1040,9 @@
         <div class="logo-tagline">Educational Lexical Analyser</div>
       </div>
     </div>
+    <div id="render-notice" class="render-notice">
+    🚀 Backend is hosted on Render. If the server is sleeping, the first analysis may take up to 60 seconds while it wakes up.
+</div>
 
     <div class="header-right">
       <div class="header-meta">
@@ -1494,7 +1535,7 @@ async function runAnalysis() {
     try {
 
         const response = await fetch(
-            "http://localhost:8000/api/analyze",
+            "https://edu-compiler.onrender.com/api/analyze",
             {
                 method: "POST",
                 headers: {
@@ -1505,7 +1546,18 @@ async function runAnalysis() {
                 })
             }
         );
+        const notice = document.getElementById("render-notice");
 
+        fetch("https://edu-compiler.onrender.com/")
+            .finally(() => {
+
+                notice.classList.add("hide");
+
+                setTimeout(() => {
+                    notice.remove();
+                }, 500);
+
+            });
         const backendResult = await response.json();
         const semanticErrorRegex =/SEMANTIC ERROR at Line\s+(\d+)[\s\S]*?\|\s*What\s*:\s*(.*?)\s*\|[\s\S]*?\|\s*Why\s*:\s*(.*?)\s*\|[\s\S]*?\|\s*Fix\s*:\s*(.*?)\s*\|/g;
         let match;
