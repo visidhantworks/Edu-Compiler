@@ -3,7 +3,9 @@ from flask_cors import CORS
 from compiler_service import CompilerService
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, origins=[
+    "https://your-netlify-site.netlify.app"
+])
 
 compiler = CompilerService()
 
