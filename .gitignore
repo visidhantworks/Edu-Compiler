@@ -1,16 +1,13 @@
-# Compiled files
-a.out
-*.o
-
-# Temporary files
+venv/
+__pycache__/
 temp/
 
-# Python
-__pycache__/
-*.pyc
+compiler
+mini_compiler
 
-# macOS
-.DS_Store
+*.dSYM
+*.o
 
-# Environment files
-.env
+lex.yy.c
+mini_compiler.tab.c
+mini_compiler.tab.h
